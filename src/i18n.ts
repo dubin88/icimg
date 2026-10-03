@@ -91,9 +91,10 @@ export class DOMLocalizer {
         if (!record || current !== record.last)
           record = { source: current, last: current };
         const source = record.source,
-          key = source.trim(),
+          rawKey = source.trim(),
+          key = rawKey.replace(/\s+/g, " "),
           translated = translate(key, locale, overrides);
-        record.last = key ? source.replace(key, () => translated) : source;
+        record.last = rawKey ? source.replace(rawKey, () => translated) : source;
         node.textContent = record.last;
         this.texts.set(node, record);
         return;

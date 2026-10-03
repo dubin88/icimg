@@ -15,6 +15,14 @@ async function open(page: any) {
   await page.waitForFunction(() => !!(window as any).icimg?.engine.image);
   await expect(page.locator("#editor canvas")).toBeVisible();
 }
+test("multiline HTML text is localized and can switch back", async ({page}) => {
+  await open(page);
+  await page.locator('#site-locale').selectOption('zh-CN');
+  await expect(page.locator('.intro-bottom p')).toContainText('直接在浏览器中，创作美好。');
+  await expect(page.locator('.features article').first()).toContainText('需要的工具，就在手边。');
+  await page.locator('#site-locale').selectOption('en');
+  await expect(page.locator('.intro-bottom p')).toContainText('Make something beautiful, right in your browser.');
+});
 test("16 locales are complete, regional variants resolve and editor locale is independent", async ({
   page,
 }) => {

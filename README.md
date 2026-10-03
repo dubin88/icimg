@@ -13,7 +13,7 @@ npm install icimg
 也可以下载演示页里的 npm 安装包，或在源码目录执行 `npm pack` 后本地安装：
 
 ```sh
-npm install ./icimg-1.0.0.tgz
+npm install ./icimg-1.1.0.tgz
 ```
 
 ## 快速开始
@@ -28,6 +28,7 @@ import { createEditor } from 'icimg';
 const editor = createEditor(document.querySelector('#editor')!, {
   src: '/photo.jpg',
   name: 'photo.jpg',
+  locale: 'zh-CN', // 默认自动识别浏览器语言
   accent: '#ed744a',
   onExport: blob => console.log(blob),
 });
@@ -47,11 +48,51 @@ editor.destroy(); // 卸载时释放资源
 - 曝光、对比度、高光、阴影、饱和度、色温、暗角。
 - Original / Vivid / Warm / Cool / Mono / Fade 六种预设。
 - 自由画笔、自定义颜色与笔宽；文字标注、颜色与字号。
+- 形状菜单：矩形、椭圆、三角形、多边形（3–12 边）、菱形、星形、心形、箭头、直线、对勾、闪电、加号；可调整描边颜色、线宽与填充。
+- 自由曲线使用二次贝塞尔曲线平滑绘制；形状和曲线支持裁剪、导出、撤销重做。
+- 16 种语言、自动检测、实时切换、阿拉伯语 RTL 布局、文案覆盖。
 - 50 步撤销重做、重置、按住查看原图。
 - PNG / JPEG / WebP 导出；质量设置、按比例设置输出尺寸。
 - 上传与拖放图片，键盘操作、移动端触控。
 
 这是常用修图与标注工具，不包含 Photoshop 的图层、蒙版、钢笔路径、内容识别或 AI 消除能力。
+
+## 国际化（v1.1.0）
+
+支持以下 16 种语言。地区变体会匹配对应基础语言，例如 `en-GB` → `en`、`fr-CA` → `fr`、`pt-PT` → `pt-BR`、`zh-Hans-CN` → `zh-CN`。中文内置为简体；其他中文地区也回退为简体。检测按浏览器首选语言列表顺序进行，不支持的语言回退为英语。
+
+| 代码 | 语言 | 代码 | 语言 |
+|---|---|---|---|
+| `zh-CN` | 简体中文 | `en` | 英语 |
+| `ja` | 日语 | `ko` | 韩语 |
+| `fr` | 法语 | `de` | 德语 |
+| `es` | 西班牙语 | `pt-BR` | 巴西葡萄牙语 |
+| `it` | 意大利语 | `nl` | 荷兰语 |
+| `ru` | 俄语 | `pl` | 波兰语 |
+| `tr` | 土耳其语 | `ar` | 阿拉伯语（RTL） |
+| `hi` | 印地语 | `th` | 泰语 |
+
+```ts
+import { createEditor, supportedLocales, resolveLocale } from 'icimg';
+const editor = createEditor(host, {
+  src: '/photo.jpg',
+  locale: 'zh-CN', // 省略时读取 navigator.languages
+  messages: { 'Export image': '保存作品' }, // 使用英语源文案作为 key
+});
+editor.setLocale('ja'); // 保留图片、调色、裁剪框、标注、历史及当前输入
+console.log(editor.locale); // ja
+host.addEventListener('icimg:localechange', event => {
+  console.log(event.detail.locale);
+});
+```
+
+工具栏提供原生语言下拉框，语言名称以本地文字显示。UI 文字、标题、无障碍名称、提示和已知错误信息都会切换。API 标识、预设名称、文件名、用户文字内容及程序抛出的错误字符串保持稳定，便于跨语言使用；SDK 不保存语言偏好，也不改动宿主页面的语言。演示页独立保存语言选择到浏览器本地，并与编辑器双向同步。所有翻译随包提供，不请求外部翻译服务。自定义文案作为纯文本处理。
+
+Web Component 使用 `locale` 属性，并响应后续变化：
+
+```html
+<ic-image-editor src="/photo.jpg" locale="zh-CN"></ic-image-editor>
+```
 
 ## React
 
@@ -110,7 +151,7 @@ defineCustomElement(); // 可选名称，默认 ic-image-editor
 `ImageEngine` 可单独使用，无需挂载 UI。UI 的 `editor.engine` 是同一个接口。
 
 ```ts
-import { ImageEngine } from 'icimg';
+import { ImageEngine } from 'icimg/engine'; // 独立的轻量引擎入口，不含 UI 或语言包
 const engine = new ImageEngine();
 await engine.load(file);
 engine.adjust({ exposure: 12, contrast: 10, warmth: 15 });
@@ -118,6 +159,11 @@ engine.preset('Vivid');
 engine.rotate(90); // 任意有限角度；UI 提供 90°按钮
 engine.crop({ x: .1, y: .1, width: .8, height: .8 });
 engine.update({ flipX: true });
+engine.update({ annotations: [{
+  type: 'shape', kind: 'polygon', sides: 7,
+  x: .2, y: .2, width: .4, height: .4, // 0–1 归一化坐标
+  color: '#ed744a', strokeWidth: 12, fill: false,
+}] });
 engine.undo();
 engine.redo();
 engine.reset();
@@ -145,7 +191,9 @@ engine.destroy();
 
 `ExportOptions`: `type` 为 `image/png` / `image/jpeg` / `image/webp`；`quality` 为 0–1；只提供 `width` 或 `height` 会保持比例，同时提供二者允许改变比例。JPEG 的透明区域填充白色。浏览器不支持请求的格式时可能返回 PNG，以 `blob.type` 为准。
 
-引擎派发 `change` 事件。宿主 DOM 派发 `icimg:load`（名称与尺寸）、`icimg:change`（状态副本）、`icimg:export`（Blob，内置下载操作完成时）。
+引擎派发 `change` 事件。宿主 DOM 派发 `icimg:load`（名称与尺寸）、`icimg:change`（状态副本）、`icimg:export`（Blob，内置下载操作完成时）和 `icimg:localechange`（`{ locale }`）。
+
+形状 `kind` 支持 `rectangle`、`ellipse`、`triangle`、`polygon`、`diamond`、`star`、`heart`、`arrow`、`line`、`check`、`lightning`、`plus`。线条允许带符号的宽高表示端点方向；其他形状使用正宽高包围盒。描边宽度基于原始图片像素。`stroke` 标注可设置 `smooth: true` 启用平滑曲线。形状一旦放置即成为标注，当前不提供放置后的选中、移动或单独调整操作，可通过撤销移除。
 
 ## 性能与兼容
 

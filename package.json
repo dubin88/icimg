@@ -1,6 +1,6 @@
 {
   "name": "icimg",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A lightweight, dependency-free image editor with an Apple-inspired interface.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -11,17 +11,23 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./engine": {
+      "types": "./dist/engine.d.ts",
+      "import": "./dist/engine.js",
+      "require": "./dist/engine.cjs"
     }
   },
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "sideEffects": false,
   "scripts": {
     "dev": "vite demo --host 0.0.0.0",
-    "build": "tsup src/index.ts --format esm,cjs --dts --minify --clean",
+    "build": "tsup src/index.ts src/engine.ts --format esm,cjs --dts --minify --clean --no-splitting",
     "build:demo": "vite build demo --outDir ../build --emptyOutDir",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
@@ -34,7 +40,11 @@
     "canvas",
     "web-component",
     "react",
-    "vue"
+    "vue",
+    "i18n",
+    "internationalization",
+    "shapes",
+    "polygon"
   ],
   "license": "MIT",
   "engines": {

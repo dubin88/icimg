@@ -22,7 +22,7 @@
   "scripts": {
     "dev": "vite demo --host 0.0.0.0",
     "build": "tsup src/index.ts --format esm,cjs --dts --minify --clean",
-    "build:demo": "vite build demo --outDir ../site-dist --emptyOutDir",
+    "build:demo": "vite build demo --outDir ../build --emptyOutDir",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "prepublishOnly": "npm run typecheck && npm run build"

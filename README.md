@@ -4,13 +4,13 @@
 
 ## 安装
 
-npm 注册表发布成功后：
+已发布至 npm 官方注册表：
 
 ```sh
 npm install icimg
 ```
 
-尚未发布时，下载演示页里的 npm 安装包，或在源码目录执行 `npm pack`：
+也可以下载演示页里的 npm 安装包，或在源码目录执行 `npm pack` 后本地安装：
 
 ```sh
 npm install ./icimg-1.0.0.tgz

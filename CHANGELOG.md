@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+- Replace drag-to-scribble Free curve with Word-style click-to-place curve nodes, hover previews, double-click/Enter/button completion and click-to-close paths.
+- Add interpolating cubic Bézier curves, closed-curve fills, Backspace/Delete/Ctrl+Z point removal and Esc/button cancellation.
+- Keep curve drafts across language switches, commit each completed curve as one undo step and exclude draft markers from exports.
+- Translate curve instructions and completion/cancellation controls in all 16 locales.
+
 ## 1.1.0
 
 - Add 16 built-in locales, browser language detection, per-editor language selection, `setLocale()`, custom messages and `icimg:localechange`.

@@ -8,6 +8,8 @@ import {
 } from "./i18n";
 import {
   drawShape,
+  drawCurve,
+  type CurveAnnotation,
   shapeKinds,
   type ShapeAnnotation,
   type ShapeKind,
@@ -96,6 +98,9 @@ export class ImageEditor {
   private currentLocale: Locale;
   private localizer = new DOMLocalizer();
   private shapePreview: ShapeAnnotation | null = null;
+  private curve: CurveAnnotation | null = null;
+  private curveHover: Point | null = null;
+  private curveSuppressedUntil = 0;
   private shapeKind: ShapeKind | "curve" = "rectangle";
   readonly engine = new ImageEngine();
   readonly root: ShadowRoot;
@@ -163,6 +168,20 @@ export class ImageEditor {
       (e) => this.pointerUp(e as PointerEvent),
       { signal },
     );
+    this.root.addEventListener(
+      "dblclick",
+      (e) => {
+        if (
+          (e.target as Element).closest(".stage") &&
+          this.curve &&
+          performance.now() > this.curveSuppressedUntil
+        ) {
+          e.preventDefault();
+          this.finishCurve();
+        }
+      },
+      { signal },
+    );
     this.root.addEventListener("pointercancel", () => this.cancelPointer(), {
       signal,
     });
@@ -215,7 +234,7 @@ export class ImageEditor {
   }
   setLocale(locale: string) {
     if (this.destroyed) throw new Error("Editor has been destroyed");
-    this.cancelPointer();
+    this.cancelPointer(false);
     this.currentLocale = resolveLocale(locale);
     this.localize();
     this.refresh();
@@ -248,6 +267,7 @@ export class ImageEditor {
       this.q(".editor").classList.add("loading");
       await this.engine.load(src);
       if (this.destroyed || generation !== this.loadGeneration) return;
+      this.cancelPointer();
       this.engine.name = name ?? this.engine.name;
       this.tool = "adjust";
       this.zoom = 1;
@@ -338,6 +358,25 @@ export class ImageEditor {
       );
       ctx.restore();
     }
+    if (this.curve) {
+      const ctx = canvas.getContext("2d")!,
+        c = e.state.crop,
+        fullW = canvas.width / (c?.width ?? 1),
+        fullH = canvas.height / (c?.height ?? 1);
+      ctx.save();
+      ctx.translate(-(c?.x ?? 0) * fullW, -(c?.y ?? 0) * fullH);
+      const points = this.curveHover
+        ? [...this.curve.points, this.curveHover]
+        : this.curve.points;
+      drawCurve(
+        ctx,
+        { ...this.curve, points, closed: false, fill: false },
+        fullW,
+        fullH,
+        canvas.width / e.outputDimensions.width,
+      );
+      ctx.restore();
+    }
     const fit = Math.min(
       (stage.clientWidth - 70) / rendered.width,
       (stage.clientHeight - 24) / rendered.height,
@@ -348,6 +387,26 @@ export class ImageEditor {
     wrap.style.height = `${Math.max(1, rendered.height * fit)}px`;
     wrap.style.transform = `translate(${this.pan.x}px,${this.pan.y}px) scale(${this.zoom})`;
     this.q(".zoom-value").textContent = `${Math.round(this.zoom * 100)}%`;
+    if (this.curve) {
+      const ctx = canvas.getContext("2d")!,
+        c = e.state.crop,
+        radius = 3.5 / (fit * this.zoom);
+      for (const p of this.curve.points) {
+        ctx.beginPath();
+        ctx.arc(
+          ((p.x - (c?.x ?? 0)) * canvas.width) / (c?.width ?? 1),
+          ((p.y - (c?.y ?? 0)) * canvas.height) / (c?.height ?? 1),
+          radius,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fillStyle = "#fff";
+        ctx.strokeStyle = this.curve.color;
+        ctx.lineWidth = 1 / (fit * this.zoom);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
     this.drawCrop();
   }
   private drawCrop() {
@@ -400,7 +459,7 @@ export class ImageEditor {
     if (this.tool === "text")
       html = `<div class="panel-heading"><h3>Say something</h3></div><p class="panel-description">Give your image a voice.</p><label class="field-label" for="text-content">Your words</label><input class="field" id="text-content" value="${escape(this.t("A moment to remember"))}" maxlength="200"><label class="field-label" for="text-color">Text color</label><input class="field" id="text-color" type="color" value="#ffffff"><label class="field-label" for="text-size">Font size (px)</label><input class="field" id="text-size" type="number" min="8" max="500" value="80"><p class="hint">Click on the image to place your text. Use Undo to remove a placement.</p><button class="secondary wide" data-action="clear-annotations">Clear annotations</button>`;
     if (this.tool === "shapes")
-      html = `<div class="panel-heading"><h3>Shapes</h3></div><p class="panel-description">Bring your ideas into shape.</p><div class="shape-grid">${[...shapeKinds, "curve"].map((kind) => `<button class="shape-choice ${this.shapeKind === kind ? "selected" : ""}" data-shape="${kind}" aria-label="${shapeNames[kind]}"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="${shapePaths[kind]}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg><span>${shapeNames[kind]}</span></button>`).join("")}</div><label class="field-label" for="shape-color">Stroke color</label><input class="field" id="shape-color" type="color" value="${this.shapeColor}"><label class="field-label" for="shape-width">Stroke width (px)</label><input class="field" id="shape-width" type="number" min="1" max="200" value="${this.shapeWidth}"><label class="field-label" for="shape-fill">Fill shape</label><select class="field" id="shape-fill"><option value="false" ${!this.shapeFill ? "selected" : ""}>No fill</option><option value="true" ${this.shapeFill ? "selected" : ""}>Solid fill</option></select>${this.shapeKind === "polygon" ? `<label class="field-label" for="shape-sides">Polygon sides</label><input class="field" id="shape-sides" type="number" min="3" max="12" value="${this.shapeSides}">` : ""}<p class="hint">Drag on the image to place a shape. Choose Free curve to draw a smooth path.</p><button class="secondary wide" data-action="clear-annotations">Clear annotations</button>`;
+      html = `<div class="panel-heading"><h3>Shapes</h3></div><p class="panel-description">Bring your ideas into shape.</p><div class="shape-grid">${[...shapeKinds, "curve"].map((kind) => `<button class="shape-choice ${this.shapeKind === kind ? "selected" : ""}" data-shape="${kind}" aria-label="${shapeNames[kind]}"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="${shapePaths[kind]}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg><span>${shapeNames[kind]}</span></button>`).join("")}</div><label class="field-label" for="shape-color">Stroke color</label><input class="field" id="shape-color" type="color" value="${this.shapeColor}"><label class="field-label" for="shape-width">Stroke width (px)</label><input class="field" id="shape-width" type="number" min="1" max="200" value="${this.shapeWidth}"><label class="field-label" for="shape-fill">Fill shape</label><select class="field" id="shape-fill"><option value="false" ${!this.shapeFill ? "selected" : ""}>No fill</option><option value="true" ${this.shapeFill ? "selected" : ""}>Solid fill</option></select>${this.shapeKind === "polygon" ? `<label class="field-label" for="shape-sides">Polygon sides</label><input class="field" id="shape-sides" type="number" min="3" max="12" value="${this.shapeSides}">` : ""}${this.shapeKind === "curve" ? `<p class="hint">Click to add curve points. Double-click or press Enter to finish; click the start to close. Backspace removes a point; Esc cancels.</p><button class="primary wide" data-action="finish-curve" ${!this.curve || this.curve.points.length < 2 ? "disabled" : ""}>Finish curve</button><button class="secondary wide" data-action="cancel-curve" ${!this.curve ? "disabled" : ""}>Cancel curve</button>` : `<p class="hint">Drag on the image to place a shape. Choose Free curve to draw a smooth path.</p>`}<button class="secondary wide" data-action="clear-annotations">Clear annotations</button>`;
     this.q(".panel").innerHTML = html;
     this.refresh();
   }
@@ -428,6 +487,7 @@ export class ImageEditor {
     const target = (event.target as HTMLElement).closest<HTMLElement>("button");
     if (!target) return;
     if (target.dataset.shape) {
+      this.cancelPointer();
       this.shapeKind = target.dataset.shape as ShapeKind | "curve";
       this.renderPanel();
       return;
@@ -450,6 +510,20 @@ export class ImageEditor {
     }
     const action = target.dataset.action;
     const e = this.engine;
+    if (action === "finish-curve") {
+      this.finishCurve();
+      return;
+    }
+    if (action === "cancel-curve") {
+      this.cancelPointer();
+      return;
+    }
+    if (
+      ["undo", "redo", "reset", "clear-annotations", "upload"].includes(
+        action ?? "",
+      )
+    )
+      this.cancelPointer();
     switch (action) {
       case "upload":
         this.file.click();
@@ -622,9 +696,50 @@ export class ImageEditor {
       return;
     const stage = this.q(".stage");
     stage.focus();
+    if (this.tool === "shapes" && this.shapeKind === "curve" && !this.space) {
+      if (performance.now() < this.curveSuppressedUntil) return;
+      const rect = this.q("canvas").getBoundingClientRect();
+      if (
+        event.clientX < rect.left ||
+        event.clientX > rect.right ||
+        event.clientY < rect.top ||
+        event.clientY > rect.bottom
+      )
+        return;
+      event.preventDefault();
+      const point = this.annotationPoint(this.point(event));
+      if (!this.curve)
+        this.curve = {
+          type: "curve",
+          points: [],
+          color: this.shapeColor,
+          width: this.shapeWidth,
+          closed: false,
+          fill: this.shapeFill,
+        };
+      const points = this.curve.points,
+        first = points[0],
+        last = points.at(-1),
+        crop = this.engine.state.crop;
+      const distance = (p: Point) =>
+        Math.hypot(
+          ((point.x - p.x) * rect.width) / (crop?.width ?? 1),
+          ((point.y - p.y) * rect.height) / (crop?.height ?? 1),
+        );
+      if (points.length >= 3 && distance(first) < 10) {
+        this.finishCurve(true);
+        this.curveSuppressedUntil = performance.now() + 350;
+        return;
+      }
+      if (!last || distance(last) > 1) points.push(point);
+      this.curveHover = null;
+      this.updateCurveButtons();
+      this.schedule();
+      return;
+    }
+
     stage.setPointerCapture(event.pointerId);
     let kind: string = this.space || this.tool === "move" ? "pan" : this.tool;
-    if (kind === "shapes" && this.shapeKind === "curve") kind = "curve";
     if (this.tool === "crop" && !this.space)
       kind = el.classList.contains("handle") ? "resize" : "crop";
     const p = this.point(event);
@@ -662,6 +777,11 @@ export class ImageEditor {
   }
   private pointerMove(event: PointerEvent) {
     const p = this.pointer;
+    if (!p && this.curve && (event.target as Element).closest(".stage")) {
+      this.curveHover = this.annotationPoint(this.point(event));
+      this.schedule();
+      return;
+    }
     if (!p) return;
     const dx = event.clientX - p.start.x,
       dy = event.clientY - p.start.y;
@@ -718,7 +838,7 @@ export class ImageEditor {
       };
       this.schedule();
     }
-    if (p.kind === "brush" || p.kind === "curve") {
+    if (p.kind === "brush") {
       p.points.push(this.annotationPoint(this.point(event)));
       const canvas = this.q<HTMLCanvasElement>("canvas"),
         ctx = canvas.getContext("2d")!;
@@ -728,23 +848,17 @@ export class ImageEditor {
       const previous = c
         ? { x: (prev.x - c.x) / c.width, y: (prev.y - c.y) / c.height }
         : prev;
-      ctx.strokeStyle =
-        p.kind === "curve"
-          ? this.shapeColor
-          : this.q<HTMLInputElement>("#brush-color").value;
+      ctx.strokeStyle = this.q<HTMLInputElement>("#brush-color").value;
       ctx.lineWidth =
-        p.kind === "curve"
-          ? (this.shapeWidth * canvas.width) /
-            this.engine.outputDimensions.width
-          : (Math.max(
-              1,
-              Math.min(
-                200,
-                Number(this.q<HTMLInputElement>("#brush-size").value) || 12,
-              ),
-            ) *
-              canvas.width) /
-            this.engine.outputDimensions.width;
+        (Math.max(
+          1,
+          Math.min(
+            200,
+            Number(this.q<HTMLInputElement>("#brush-size").value) || 12,
+          ),
+        ) *
+          canvas.width) /
+        this.engine.outputDimensions.width;
       ctx.lineCap = ctx.lineJoin = "round";
       ctx.beginPath();
       ctx.moveTo(previous.x * canvas.width, previous.y * canvas.height);
@@ -775,7 +889,7 @@ export class ImageEditor {
         this.toast("Shape added.");
       } else this.schedule();
     }
-    if (p.kind === "brush" || p.kind === "curve") {
+    if (p.kind === "brush") {
       if (p.points.length === 1)
         p.points.push({ ...p.points[0], x: p.points[0].x + 0.00001 });
       this.engine.update({
@@ -784,28 +898,51 @@ export class ImageEditor {
           {
             type: "stroke",
             points: p.points,
-            color:
-              p.kind === "curve"
-                ? this.shapeColor
-                : this.q<HTMLInputElement>("#brush-color").value,
-            width:
-              p.kind === "curve"
-                ? this.shapeWidth
-                : Math.max(
-                    1,
-                    Math.min(
-                      200,
-                      Number(this.q<HTMLInputElement>("#brush-size").value) ||
-                        12,
-                    ),
-                  ),
-            smooth: p.kind === "curve",
+            color: this.q<HTMLInputElement>("#brush-color").value,
+            width: Math.max(
+              1,
+              Math.min(
+                200,
+                Number(this.q<HTMLInputElement>("#brush-size").value) || 12,
+              ),
+            ),
+            smooth: false,
           },
         ],
       });
     }
   }
-  private cancelPointer() {
+  private updateCurveButtons() {
+    const finish = this.root.querySelector<HTMLButtonElement>(
+        "[data-action=finish-curve]",
+      ),
+      cancel = this.root.querySelector<HTMLButtonElement>(
+        "[data-action=cancel-curve]",
+      );
+    if (finish) finish.disabled = !this.curve || this.curve.points.length < 2;
+    if (cancel) cancel.disabled = !this.curve;
+  }
+  private finishCurve(closed = false) {
+    if (!this.curve || this.curve.points.length < (closed ? 3 : 2)) return;
+    const annotation = {
+      ...this.curve,
+      points: this.curve.points.map((p) => ({ ...p })),
+      closed,
+    };
+    this.curve = null;
+    this.curveHover = null;
+    this.updateCurveButtons();
+    this.engine.update({
+      annotations: [...this.engine.state.annotations, annotation],
+    });
+    this.toast("Shape added.");
+  }
+  private cancelPointer(clearCurve = true) {
+    if (clearCurve) {
+      this.curve = null;
+      this.curveHover = null;
+      this.updateCurveButtons();
+    }
     this.pointer = null;
     this.shapePreview = null;
     this.comparing = false;
@@ -814,6 +951,31 @@ export class ImageEditor {
   }
   private key(e: KeyboardEvent) {
     if ((e.target as HTMLElement).matches("input,select,textarea")) return;
+    if (this.curve) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        this.cancelPointer();
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.finishCurve();
+        return;
+      }
+      if (
+        e.key === "Backspace" ||
+        e.key === "Delete" ||
+        ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey)
+      ) {
+        e.preventDefault();
+        this.curve.points.pop();
+        this.curveHover = null;
+        if (!this.curve.points.length) this.curve = null;
+        this.updateCurveButtons();
+        this.schedule();
+        return;
+      }
+    }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
       e.preventDefault();
       e.shiftKey ? this.engine.redo() : this.engine.undo();

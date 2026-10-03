@@ -191,3 +191,54 @@ export function drawStroke(
   } else points.slice(1).forEach((p) => ctx.lineTo(p.x * width, p.y * height));
   ctx.stroke();
 }
+
+export interface CurveAnnotation {
+  type: "curve";
+  points: { x: number; y: number }[];
+  color: string;
+  width: number;
+  closed: boolean;
+  fill: boolean;
+}
+/** Interpolating cubic spline: each clicked node lies on the curve. */
+export function drawCurve(
+  ctx: CanvasRenderingContext2D,
+  curve: CurveAnnotation,
+  width: number,
+  height: number,
+  scale = 1,
+) {
+  const points = curve.points,
+    n = points.length;
+  if (n < 2) return;
+  const point = (index: number) =>
+    points[
+      curve.closed ? (index + n) % n : Math.max(0, Math.min(n - 1, index))
+    ];
+  ctx.save();
+  ctx.strokeStyle = ctx.fillStyle = curve.color;
+  ctx.lineWidth = curve.width * scale;
+  ctx.lineCap = ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(points[0].x * width, points[0].y * height);
+  for (let i = 0; i < (curve.closed ? n : n - 1); i++) {
+    const p0 = point(i - 1),
+      p1 = point(i),
+      p2 = point(i + 1),
+      p3 = point(i + 2);
+    ctx.bezierCurveTo(
+      (p1.x + (p2.x - p0.x) / 6) * width,
+      (p1.y + (p2.y - p0.y) / 6) * height,
+      (p2.x - (p3.x - p1.x) / 6) * width,
+      (p2.y - (p3.y - p1.y) / 6) * height,
+      p2.x * width,
+      p2.y * height,
+    );
+  }
+  if (curve.closed) {
+    ctx.closePath();
+    if (curve.fill) ctx.fill();
+  }
+  ctx.stroke();
+  ctx.restore();
+}

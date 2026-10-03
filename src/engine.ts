@@ -1,4 +1,10 @@
-import { drawShape, drawStroke, type ShapeAnnotation } from "./shapes";
+import {
+  drawShape,
+  drawStroke,
+  drawCurve,
+  type CurveAnnotation,
+  type ShapeAnnotation,
+} from "./shapes";
 export interface Adjustments {
   exposure: number;
   contrast: number;
@@ -26,6 +32,7 @@ export type Annotation =
       width: number;
       smooth?: boolean;
     }
+  | CurveAnnotation
   | ShapeAnnotation
   | {
       type: "text";
@@ -308,6 +315,8 @@ export class ImageEngine extends EventTarget {
             annotation.x * out.width,
             annotation.y * out.height,
           );
+        } else if (annotation.type === "curve") {
+          drawCurve(ctx, annotation, out.width, out.height, scale);
         } else if (annotation.type === "shape") {
           drawShape(ctx, annotation, out.width, out.height, scale);
         } else {

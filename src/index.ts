@@ -7,7 +7,7 @@ export {
 } from "./i18n";
 export type { Locale, Messages } from "./i18n";
 export { shapeKinds } from "./shapes";
-export type { ShapeKind, ShapeAnnotation } from "./shapes";
+export type { ShapeKind, ShapeAnnotation, CurveAnnotation } from "./shapes";
 export { ImageEngine, adjustedPixels, defaults, presets } from "./engine";
 export type {
   EditorState,

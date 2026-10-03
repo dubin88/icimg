@@ -15,13 +15,21 @@ async function open(page: any) {
   await page.waitForFunction(() => !!(window as any).icimg?.engine.image);
   await expect(page.locator("#editor canvas")).toBeVisible();
 }
-test("multiline HTML text is localized and can switch back", async ({page}) => {
+test("multiline HTML text is localized and can switch back", async ({
+  page,
+}) => {
   await open(page);
-  await page.locator('#site-locale').selectOption('zh-CN');
-  await expect(page.locator('.intro-bottom p')).toContainText('直接在浏览器中，创作美好。');
-  await expect(page.locator('.features article').first()).toContainText('需要的工具，就在手边。');
-  await page.locator('#site-locale').selectOption('en');
-  await expect(page.locator('.intro-bottom p')).toContainText('Make something beautiful, right in your browser.');
+  await page.locator("#site-locale").selectOption("zh-CN");
+  await expect(page.locator(".intro-bottom p")).toContainText(
+    "直接在浏览器中，创作美好。",
+  );
+  await expect(page.locator(".features article").first()).toContainText(
+    "需要的工具，就在手边。",
+  );
+  await page.locator("#site-locale").selectOption("en");
+  await expect(page.locator(".intro-bottom p")).toContainText(
+    "Make something beautiful, right in your browser.",
+  );
 });
 test("16 locales are complete, regional variants resolve and editor locale is independent", async ({
   page,
@@ -224,19 +232,22 @@ test("free curve is smooth and horizontal lines can be placed", async ({
   await page.getByRole("button", { name: "Free curve", exact: true }).click();
   let r = await canvasRect(page);
   await page.mouse.move(r.x + r.width * 0.2, r.y + r.height * 0.3);
-  await page.mouse.down();
+  await page.mouse.click(r.x + r.width * 0.2, r.y + r.height * 0.3);
   await page.mouse.move(r.x + r.width * 0.4, r.y + r.height * 0.6, {
     steps: 5,
   });
-  await page.mouse.move(r.x + r.width * 0.6, r.y + r.height * 0.3, {
-    steps: 5,
-  });
-  await page.mouse.up();
+  await page.mouse.click(r.x + r.width * 0.4, r.y + r.height * 0.6);
   expect(
     await page.evaluate(
-      () => (window as any).icimg.engine.state.annotations[0],
+      () => (window as any).icimg.engine.state.annotations.length,
     ),
-  ).toMatchObject({ type: "stroke", smooth: true });
+  ).toBe(0);
+  await page.mouse.dblclick(r.x + r.width * 0.6, r.y + r.height * 0.3);
+  const curve = await page.evaluate(
+    () => (window as any).icimg.engine.state.annotations[0],
+  );
+  expect(curve).toMatchObject({ type: "curve", closed: false });
+  expect(curve.points).toHaveLength(3);
   await page.getByRole("button", { name: "Line", exact: true }).click();
   r = await canvasRect(page);
   await page.mouse.move(r.x + r.width * 0.7, r.y + r.height * 0.5);

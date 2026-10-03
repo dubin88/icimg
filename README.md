@@ -13,7 +13,7 @@ npm install icimg
 也可以下载演示页里的 npm 安装包，或在源码目录执行 `npm pack` 后本地安装：
 
 ```sh
-npm install ./icimg-1.1.0.tgz
+npm install ./icimg-1.1.1.tgz
 ```
 
 ## 快速开始
@@ -49,7 +49,7 @@ editor.destroy(); // 卸载时释放资源
 - Original / Vivid / Warm / Cool / Mono / Fade 六种预设。
 - 自由画笔、自定义颜色与笔宽；文字标注、颜色与字号。
 - 形状菜单：矩形、椭圆、三角形、多边形（3–12 边）、菱形、星形、心形、箭头、直线、对勾、闪电、加号；可调整描边颜色、线宽与填充。
-- 自由曲线使用二次贝塞尔曲线平滑绘制；形状和曲线支持裁剪、导出、撤销重做。
+- Word 式自由曲线：点击添加节点，移动预览，双击或 Enter 完成；点击起点闭合，退格删除上一点，Esc 取消。三次贝塞尔曲线经过各节点，闭合时可填充；支持裁剪、导出与一次撤销。
 - 16 种语言、自动检测、实时切换、阿拉伯语 RTL 布局、文案覆盖。
 - 50 步撤销重做、重置、按住查看原图。
 - PNG / JPEG / WebP 导出；质量设置、按比例设置输出尺寸。
@@ -222,3 +222,18 @@ npm pack
 演示图片：[Luca Bravo / Unsplash](https://unsplash.com/photos/aerial-photography-of-lake-surrounded-by-trees-and-mountain-g30P1zcOzXo)。
 
 MIT License.
+
+### Word 式曲线（v1.1.1）
+
+“形状 → 自由曲线”按点击位置建立节点，鼠标移动预览下一段，松开鼠标不会结束。双击、Enter 或“完成曲线”按钮结束开放曲线；已有至少 3 个节点时点击起点附近会闭合。Backspace / Delete / Ctrl+Z 在绘制过程中删除上一节点；Esc、取消按钮、换工具或换形状取消未完成曲线，不写入历史。切换语言保留当前节点。普通画笔仍使用按住拖动绘画。
+
+节点通过三次贝塞尔插值连接，所有点击节点都落在曲线上，预览节点标记不会导出。完成曲线只新增一条历史记录。闭合曲线允许填充，开放曲线只有描边。
+
+```ts
+engine.update({ annotations: [{
+  type: 'curve', points: [{ x: .2, y: .2 }, { x: .5, y: .7 }, { x: .8, y: .2 }],
+  color: '#ed744a', width: 12, closed: false, fill: false,
+}] });
+```
+
+交互参考：[Microsoft — Draw a curve or circle shape](https://support.microsoft.com/en-us/office/graphics-visuals/draw-a-curve-or-circle-shape)。

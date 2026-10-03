@@ -1,3 +1,4 @@
+import { curveKeys, curveRows } from "./locales/curve";
 import { labelKeys, labelRows } from "./locales/labels";
 import { helpKeys, helpRows } from "./locales/help";
 export const supportedLocales = [
@@ -21,17 +22,25 @@ export const supportedLocales = [
 export type Locale = (typeof supportedLocales)[number]["code"];
 export type Messages = Readonly<Record<string, string>>;
 const dictionaries: Record<string, Record<string, string>> = {
-  en: Object.fromEntries([...labelKeys, ...helpKeys].map((key) => [key, key])),
+  en: Object.fromEntries(
+    [...labelKeys, ...helpKeys, ...curveKeys].map((key) => [key, key]),
+  ),
 };
 for (const { code } of supportedLocales) {
   if (code === "en") continue;
   const labels = labelRows[code].split("|"),
-    help = helpRows[code].split("|");
-  if (labels.length !== labelKeys.length || help.length !== helpKeys.length)
+    help = helpRows[code].split("|"),
+    curve = curveRows[code].split("|");
+  if (
+    labels.length !== labelKeys.length ||
+    help.length !== helpKeys.length ||
+    curve.length !== curveKeys.length
+  )
     throw new Error(`Incomplete translation: ${code}`);
   dictionaries[code] = Object.fromEntries([
     ...labelKeys.map((key, i) => [key, labels[i]]),
     ...helpKeys.map((key, i) => [key, help[i]]),
+    ...curveKeys.map((key, i) => [key, curve[i]]),
   ]);
 }
 /** Match BCP 47 region variants, then fall back to English. No browser globals at import time. */
@@ -94,7 +103,9 @@ export class DOMLocalizer {
           rawKey = source.trim(),
           key = rawKey.replace(/\s+/g, " "),
           translated = translate(key, locale, overrides);
-        record.last = rawKey ? source.replace(rawKey, () => translated) : source;
+        record.last = rawKey
+          ? source.replace(rawKey, () => translated)
+          : source;
         node.textContent = record.last;
         this.texts.set(node, record);
         return;

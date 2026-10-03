@@ -1,0 +1,9 @@
+node_modules/
+dist/
+site-dist/
+test-results/
+playwright-report/
+*.tgz
+.DS_Store
+
+!demo/public/*.tgz

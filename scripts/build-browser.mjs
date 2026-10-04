@@ -1,0 +1,11 @@
+import { build } from 'esbuild';
+import { writeFile, readFile } from 'node:fs/promises';
+const packageJson=JSON.parse(await readFile(new URL('../package.json',import.meta.url),'utf8'));
+const banner=`/*! iCImg v${packageJson.version} | MIT | https://github.com/dubin88/icimg */\n`;
+const result=await build({entryPoints:['src/index.ts'],bundle:true,write:false,format:'cjs',platform:'browser',target:'es2022',minify:true,legalComments:'none'});
+const factory=`function(){var module={exports:{}};var exports=module.exports;${result.outputFiles[0].text}\nreturn module.exports;}`;
+const amd=`${banner}define([],${factory});\n`;
+const global=`${banner}(function(root,factory){root.ICImg=factory();})(typeof globalThis!=="undefined"?globalThis:this,${factory});\n`;
+const umd=`${banner}(function(root,factory){if(typeof module==="object"&&module.exports){module.exports=factory();}else if(typeof define==="function"&&define.amd){define([],factory);}else{root.ICImg=factory();}})(typeof globalThis!=="undefined"?globalThis:this,${factory});\n`;
+await Promise.all([writeFile('dist/icimg.amd.js',amd),writeFile('dist/icimg.global.js',global),writeFile('dist/icimg.umd.js',umd),writeFile('dist/icimg.umd.cjs',umd)]);
+console.log('Browser builds: AMD, global (ICImg), UMD (.js and .cjs).');

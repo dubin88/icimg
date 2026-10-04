@@ -1,5 +1,7 @@
 # iCImg
 
+**简体中文** · [English](README.en.md) · [GitHub](https://github.com/dubin88/icimg) · [在线体验](https://icimg-studio.robinduvip.chatgpt.site) · [npm](https://www.npmjs.com/package/icimg)
+
 轻量、零运行时依赖的图片编辑器，原生 Canvas + TypeScript，苹果风格界面。适用于 React、Vue 或普通网页。
 
 ## 安装
@@ -13,8 +15,23 @@ npm install icimg
 也可以下载演示页里的 npm 安装包，或在源码目录执行 `npm pack` 后本地安装：
 
 ```sh
-npm install ./icimg-1.1.1.tgz
+npm install ./icimg-1.2.0.tgz
 ```
+
+## 模块格式
+
+| 格式 | 入口 |
+|---|---|
+| ES Modules | `import { createEditor } from 'icimg'` |
+| CommonJS | `const { createEditor } = require('icimg')` |
+| AMD | RequireJS 路径 `dist/icimg.amd` |
+| 浏览器全局 | `dist/icimg.global.js`，全局对象 `ICImg` |
+| UMD | `dist/icimg.umd.js` / `require('icimg/umd')` |
+| 独立引擎 | `icimg/engine`，不包含界面和语言包 |
+
+[四种模块格式使用示例](docs/modules.md) · [完整配置说明](docs/configuration.md) · [国际化说明](docs/internationalization.md)
+
+也可在 [GitHub Releases](https://github.com/dubin88/icimg/releases) 下载预构建 zip 和 npm 安装包。
 
 ## 快速开始
 
@@ -213,6 +230,7 @@ npm install
 npm run dev
 npm run typecheck
 npm run build
+npm run test:modules
 npm run build:demo
 npx playwright install chromium
 npm test
@@ -237,3 +255,7 @@ engine.update({ annotations: [{
 ```
 
 交互参考：[Microsoft — Draw a curve or circle shape](https://support.microsoft.com/en-us/office/graphics-visuals/draw-a-curve-or-circle-shape)。
+
+## 开源协作
+
+本项目以 MIT 许可证开源。欢迎通过 [GitHub Issues](https://github.com/dubin88/icimg/issues) 提交问题，通过 Pull Request 贡献代码。开发流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。

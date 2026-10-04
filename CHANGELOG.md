@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Publish the project as a public MIT-licensed GitHub repository with bilingual documentation, contribution guidance and CI.
+- Add anonymous AMD, browser global (`ICImg`) and UMD builds alongside the existing ESM and CommonJS entry points.
+- Add module-loader tests with real RequireJS, global/UMD browser mounting tests and runnable module examples.
+- Document configuration, lifecycle, events, export settings and all 16 locales.
+
 ## 1.1.1
 
 - Replace drag-to-scribble Free curve with Word-style click-to-place curve nodes, hover previews, double-click/Enter/button completion and click-to-close paths.

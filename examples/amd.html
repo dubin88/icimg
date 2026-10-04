@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>iCImg AMD Example</title></head><body>
+<div id="editor"></div>
+<script src="../node_modules/requirejs/require.js"></script>
+<script>
+require.config({paths:{icimg:'../dist/icimg.amd'}});
+require(['icimg'],function(ICImg){ICImg.createEditor(document.getElementById('editor'),{locale:'en'});});
+</script></body></html>

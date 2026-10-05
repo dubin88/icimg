@@ -1,7 +1,7 @@
 {
   "name": "icimg",
   "version": "1.2.0",
-  "description": "A lightweight, dependency-free image editor with an Apple-inspired interface.",
+  "description": "图片编辑、图片预览、轻量 PS 风格修图组件。A lightweight, dependency-free image editor, image preview and Photoshop-style photo editor for the browser.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -79,7 +79,18 @@
     "i18n",
     "internationalization",
     "shapes",
-    "polygon"
+    "polygon",
+    "image-editor",
+    "image-editing",
+    "image-preview",
+    "photo-editor",
+    "photo-editing",
+    "image-cropper",
+    "lightweight-ps",
+    "photoshop-style",
+    "图片编辑",
+    "图片预览",
+    "轻量PS"
   ],
   "license": "MIT",
   "engines": {

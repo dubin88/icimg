@@ -1,8 +1,10 @@
-# iCImg
+# iCImg — 图片编辑、图片预览与轻量 PS
 
 **简体中文** · [English](README.en.md) · [GitHub](https://github.com/dubin88/icimg) · [在线体验](https://icimg-studio.robinduvip.chatgpt.site) · [npm](https://www.npmjs.com/package/icimg)
 
-轻量、零运行时依赖的图片编辑器，原生 Canvas + TypeScript，苹果风格界面。适用于 React、Vue 或普通网页。
+iCImg 是用于网页的**图片编辑、图片预览与轻量 PS 风格修图组件**（Image Editor / Image Preview / Lightweight Photo Editor）。基于原生 Canvas + TypeScript，零运行时依赖，采用苹果风格界面，适用于 React、Vue 或普通 JavaScript 网页。
+
+支持图片裁剪、缩放、旋转、拖动预览、原图对比、调色、滤镜、画笔、文字标注、形状和曲线绘制，以及图片导出。可用于在线图片编辑器、图片预览工具和轻量级照片编辑应用。
 
 ## 安装
 

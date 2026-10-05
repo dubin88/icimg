@@ -1,8 +1,10 @@
-# iCImg
+# iCImg — Image Editor, Image Preview & Lightweight Photo Editor
 
 [简体中文](README.md) · **English** · [Live playground](https://icimg-studio.robinduvip.chatgpt.site) · [npm](https://www.npmjs.com/package/icimg)
 
-A dependency-free TypeScript + Canvas image editor with an Apple-inspired interface. Works with React, Vue, ordinary JavaScript, RequireJS and classic browser scripts. MIT licensed.
+iCImg is a **browser image editor, image preview component and lightweight Photoshop-style photo editor** built with TypeScript and native Canvas. It has zero runtime dependencies and an Apple-inspired interface. Works with React, Vue, ordinary JavaScript, RequireJS and classic browser scripts. MIT licensed.
+
+Use it for online image editing, photo editing and interactive image previews: crop, resize, rotate, pan and zoom, compare with the original, adjust colors, apply filters, draw, annotate and export images.
 
 ## Install and use
 
